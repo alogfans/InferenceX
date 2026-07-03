@@ -387,12 +387,22 @@ else
 
     SQUASH_FILE="/data/squash/$(echo "$IMAGE" | sed 's/[\/:@#]/_/g').sqsh"
     SPEC_SUFFIX=$([[ "$SPEC_DECODING" == "mtp" ]] && printf '_mtp' || printf '')
+    KV_BACKEND_SUFFIX=""
+    if [[ "$FRAMEWORK" == "sglang" &&
+          "${KV_OFFLOADING:-none}" == "dram" &&
+          "${KV_OFFLOAD_BACKEND:-}" == "mooncake" ]]; then
+        KV_BACKEND_SUFFIX="_mooncake"
+    fi
     # Prefer a framework-tagged script (e.g. dsv4_fp4_b300_sglang.sh) so models
     # with multiple inference engines can coexist; fall back to the historical
     # name without an engine suffix (`_trt` for trt, bare for everyone else)
     # for scripts that haven't been retagged yet.
     BENCH_BASE="benchmarks/single_node/${SCENARIO_SUBDIR}${EXP_NAME%%_*}_${PRECISION}_b300"
-    BENCH_SCRIPT="${BENCH_BASE}_${FRAMEWORK}${SPEC_SUFFIX}.sh"
+    BENCH_SCRIPT="${BENCH_BASE}_${FRAMEWORK}${KV_BACKEND_SUFFIX}${SPEC_SUFFIX}.sh"
+    if [[ -n "$KV_BACKEND_SUFFIX" && ! -f "$BENCH_SCRIPT" ]]; then
+        echo "KV backend benchmark script not found: $BENCH_SCRIPT" >&2
+        exit 1
+    fi
     if [[ ! -f "$BENCH_SCRIPT" ]]; then
         LEGACY_FW_SUFFIX=$([[ "$FRAMEWORK" == "trt" ]] && printf '_trt' || printf '')
         BENCH_SCRIPT="${BENCH_BASE}${LEGACY_FW_SUFFIX}${SPEC_SUFFIX}.sh"

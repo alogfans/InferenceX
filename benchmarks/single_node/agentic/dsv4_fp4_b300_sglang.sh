@@ -4,7 +4,7 @@ set -x
 
 # Agentic trace replay benchmark for DeepSeek-V4-Pro FP4 on B300 using SGLang.
 #
-# KV_OFFLOADING=dram requires KV_OFFLOAD_BACKEND=hicache.
+# KV_OFFLOADING=dram supports KV_OFFLOAD_BACKEND=hicache or mooncake.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INFERENCEX_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
@@ -57,7 +57,22 @@ SERVER_LOG="$RESULT_DIR/server.log"
 mkdir -p "$RESULT_DIR"
 
 CACHE_ARGS=()
-if require_agentic_kv_offload_backend hicache; then
+MOONCAKE_MASTER_LOG="$RESULT_DIR/mooncake_master.log"
+SERVER_PID=""
+ROUTER_PID=""
+MOONCAKE_MASTER_PID=""
+
+cleanup() {
+    if [[ -n "$SERVER_PID" ]] && declare -F capture_cache_metrics >/dev/null; then
+        capture_cache_metrics
+    fi
+    stop_background_process_tree "$ROUTER_PID" "SGLang router"
+    stop_background_process_tree "$SERVER_PID" "SGLang server"
+    stop_background_process_tree "$MOONCAKE_MASTER_PID" "Mooncake master"
+}
+trap cleanup EXIT
+
+configure_hicache_cpu_tier() {
     # DeepSeek V4 HiCache currently rejects --hicache-size and supports
     # capacity control only through a host/device token-capacity ratio.
     # DSv4 exposes capacity as a host/device token ratio rather than bytes.
@@ -86,7 +101,72 @@ if require_agentic_kv_offload_backend hicache; then
         --hicache-mem-layout "$HICACHE_MEM_LAYOUT"
     )
     echo "HiCache DSv4 CPU tier: ratio=$HICACHE_RATIO, capacity=${TOTAL_CPU_DRAM_GB} GB, write_policy=$HICACHE_WRITE_POLICY, io_backend=$HICACHE_IO_BACKEND, mem_layout=$HICACHE_MEM_LAYOUT"
-fi
+}
+
+case "$KV_OFFLOADING:${KV_OFFLOAD_BACKEND:-}" in
+    none:)
+        ;;
+    dram:hicache)
+        configure_hicache_cpu_tier
+        ;;
+    dram:mooncake)
+        configure_hicache_cpu_tier
+
+        MOONCAKE_VERSION="${MOONCAKE_VERSION:-0.3.11.post1}"
+        "$SGLANG_PYTHON" -m pip install --quiet --no-cache-dir --no-deps \
+            --force-reinstall "mooncake-transfer-engine-cuda13==$MOONCAKE_VERSION"
+        "$SGLANG_PYTHON" -c "from mooncake.store import MooncakeDistributedStore" >/dev/null
+        if ! command -v mooncake_master >/dev/null 2>&1; then
+            echo "Error: mooncake_master was not installed into PATH." >&2
+            exit 1
+        fi
+
+        PER_RANK_GB=$((TOTAL_CPU_DRAM_GB / TP))
+        if [ "$PER_RANK_GB" -lt 1 ]; then
+            echo "Error: Mooncake requires at least 1 GB per TP rank." >&2
+            exit 1
+        fi
+
+        MOONCAKE_MASTER_PORT=$((PORT + 12000))
+        MOONCAKE_CONFIG_PATH="$RESULT_DIR/mooncake_config.json"
+        cat > "$MOONCAKE_CONFIG_PATH" <<EOF
+{
+  "mode": "embedded",
+  "metadata_server": "P2PHANDSHAKE",
+  "master_server_address": "127.0.0.1:$MOONCAKE_MASTER_PORT",
+  "global_segment_size": "${PER_RANK_GB}GB",
+  "local_buffer_size": "4GB",
+  "protocol": "rdma",
+  "device_name": "",
+  "enable_offload": false
+}
+EOF
+        export MOONCAKE_CONFIG_PATH
+        export MC_ENABLE_DEST_DEVICE_AFFINITY=1
+        export PYTHONHASHSEED=0
+        export MC_SLICE_SIZE="${MC_SLICE_SIZE:-1048576}"
+        export MC_WORKERS_PER_CTX="${MC_WORKERS_PER_CTX:-4}"
+
+        echo "Starting Mooncake master on port $MOONCAKE_MASTER_PORT..."
+        mooncake_master --port "$MOONCAKE_MASTER_PORT" \
+            --eviction_high_watermark_ratio=0.80 \
+            --eviction_ratio=0.10 \
+            > "$MOONCAKE_MASTER_LOG" 2>&1 &
+        MOONCAKE_MASTER_PID=$!
+        sleep 2
+        if ! kill -0 "$MOONCAKE_MASTER_PID" 2>/dev/null; then
+            echo "Mooncake master died during startup." >&2
+            cat "$MOONCAKE_MASTER_LOG" >&2
+            exit 1
+        fi
+
+        CACHE_ARGS+=(--hicache-storage-backend mooncake)
+        ;;
+    *)
+        echo "Error: unsupported KV offload combination '$KV_OFFLOADING:${KV_OFFLOAD_BACKEND:-}'." >&2
+        exit 1
+        ;;
+esac
 
 USE_SGLANG_ROUTER=false
 SGLANG_BACKEND_PORT="$PORT"
@@ -232,7 +312,6 @@ fi
 
 if [ "${#METRICS_ARGS[@]}" -gt 0 ]; then
     capture_cache_metrics
-    trap capture_cache_metrics EXIT
 fi
 
 build_replay_cmd "$RESULT_DIR"

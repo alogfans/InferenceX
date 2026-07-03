@@ -4422,3 +4422,12 @@
     - "Update Minimax M3 b200 vllm image tag"
     - "Update search space to cover more configs"
   pr-link: https://github.com/SemiAnalysisAI/InferenceX/pull/1978
+
+- config-keys:
+    - dsv4-fp4-b300-sglang-agentic-mooncake
+  scenario-type:
+    - agentic-coding
+  description:
+    - "Add a DeepSeek-V4 FP4 B300 SGLang agentic benchmark backed by Mooncake."
+    - "Route Mooncake KV-offload configurations to a dedicated benchmark entry point."
+  pr-link: https://github.com/SemiAnalysisAI/InferenceX/pull/XXX
