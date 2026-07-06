@@ -73,7 +73,7 @@ elif [[ $MODEL_PREFIX == "qwen3.5" && $PRECISION == "fp4" ]]; then
     # than node-local /scratch/models, which isn't populated with Qwen3.5 on
     # the compute nodes. /data is mounted on all compute nodes (cf. the
     # MiniMax /data/models recipes above).
-    if [[ "${CONFIG_FILE:-}" == *"_mooncake_store.yaml" ]]; then
+    if [[ "${CONFIG_FILE:-}" == *"-kvcache.yaml" ]]; then
         export MODEL_PATH=/data/home/sa-shared/models/Qwen3.5-397B-A17B-NVFP4
     fi
 else
@@ -171,14 +171,14 @@ elif [[ $FRAMEWORK == "dynamo-sglang" && $MODEL_PREFIX == "glm5" ]]; then
         mkdir -p recipes/sglang/glm5/gb300-fp4
         cp -rT "$GITHUB_WORKSPACE/benchmarks/multi_node/srt-slurm-recipes/sglang/glm5/gb300-fp4" recipes/sglang/glm5/gb300-fp4
     fi
-elif [[ $FRAMEWORK == "dynamo-sglang" && $MODEL_PREFIX == "dsv4" && "${CONFIG_FILE:-}" == *"_mooncake_store.yaml" ]]; then
+elif [[ $FRAMEWORK == "dynamo-sglang" && $MODEL_PREFIX == "dsv4" && "${CONFIG_FILE:-}" == *"-kvcache.yaml" ]]; then
     # Mooncake-kvcache variants use main; legacy DSV4 recipes keep default flow.
     git clone https://github.com/NVIDIA/srt-slurm.git "$SRT_REPO_DIR"
     cd "$SRT_REPO_DIR"
     git checkout main
     mkdir -p recipes/sglang/deepseek-v4
     cp -rT "$GITHUB_WORKSPACE/benchmarks/multi_node/srt-slurm-recipes/sglang/deepseek-v4" recipes/sglang/deepseek-v4
-elif [[ $FRAMEWORK == "dynamo-sglang" && $MODEL_PREFIX == "qwen3.5" && "${CONFIG_FILE:-}" == *"_mooncake_store.yaml" ]]; then
+elif [[ $FRAMEWORK == "dynamo-sglang" && $MODEL_PREFIX == "qwen3.5" && "${CONFIG_FILE:-}" == *"-kvcache.yaml" ]]; then
     # Mooncake-kvcache variants use main; legacy Qwen3.5 recipes keep submission branch.
     git clone https://github.com/NVIDIA/srt-slurm.git "$SRT_REPO_DIR"
     cd "$SRT_REPO_DIR"

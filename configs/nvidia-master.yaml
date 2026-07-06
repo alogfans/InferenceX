@@ -13271,8 +13271,490 @@ dsv4-fp4-gb200-dynamo-vllm-agentic-2p1d-dep8-dep8:
           ep: 8
           dp-attn: true
 
-dsv4-fp4-gb300-dynamo-sglang-mooncake-store:
-  image: lmsysorg/sglang:nightly-dev-cu13-20260624-b2c8f7a2
+dsr1-fp4-b200-dynamo-sglang-mtp-kvcache:
+  image: "lmsysorg/sglang:v0.5.12.post1"
+  model: deepseek-r1-fp4
+  model-prefix: dsr1
+  runner: b200-multinode
+  precision: fp4
+  framework: dynamo-sglang
+  multinode: true
+  disagg: true
+  scenarios:
+    fixed-seq-len:
+    - isl: 8192
+      osl: 1024
+      search-space:
+      # 1p5d low-latency (decode-heavy).
+      - spec-decoding: "mtp"
+        conc-list: [4, 8, 16, 32, 64]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: false
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/dsr1/b200-fp4/8k1k/disagg/mtp/8k1k_mtp_lowlat_0-kvcache.yaml"
+        decode:
+          num-worker: 5
+          tp: 8
+          ep: 1
+          dp-attn: false
+      # 1p3d low-latency.
+      - spec-decoding: "mtp"
+        conc-list: [32, 64, 128, 256, 512]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: false
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/dsr1/b200-fp4/8k1k/disagg/mtp/8k1k_mtp_lowlat_1-kvcache.yaml"
+        decode:
+          num-worker: 3
+          tp: 8
+          ep: 1
+          dp-attn: false
+      # 1p1d low-latency.
+      - spec-decoding: "mtp"
+        conc-list: [32, 64, 128, 256, 512]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: false
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/dsr1/b200-fp4/8k1k/disagg/mtp/8k1k_mtp_lowlat_2-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 8
+          ep: 1
+          dp-attn: false
+      # MTP2 high-throughput (DEP4 prefill / DEP8 decode), one Pareto point each.
+      # 2p1d throughput.
+      - spec-decoding: "mtp"
+        conc-list: [768]
+        prefill:
+          num-worker: 2
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/dsr1/b200-fp4/8k1k/disagg/mtp/8k1k_mtp2_throughput_2p1d-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+      # 3p1d throughput.
+      - spec-decoding: "mtp"
+        conc-list: [1024]
+        prefill:
+          num-worker: 3
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/dsr1/b200-fp4/8k1k/disagg/mtp/8k1k_mtp2_throughput_3p1d-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+      # 5p1d throughput.
+      - spec-decoding: "mtp"
+        conc-list: [2048]
+        prefill:
+          num-worker: 5
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/dsr1/b200-fp4/8k1k/disagg/mtp/8k1k_mtp2_throughput_5p1d-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+
+
+dsv4-fp4-gb200-dynamo-sglang-kvcache:
+  image: lmsysorg/sglang:nightly-dev-cu13-20260528-0abe6a85
+  model: deepseek-ai/DeepSeek-V4-Pro
+  model-prefix: dsv4
+  runner: gb200
+  precision: fp4
+  framework: dynamo-sglang
+  multinode: true
+  disagg: true
+  scenarios:
+    fixed-seq-len:
+    - isl: 8192
+      osl: 1024
+      search-space:
+      # Low latency: 1p1d-tp8-tp8. 4 nodes.
+      - conc-list: [1]
+        prefill:
+          num-worker: 1
+          tp: 8
+          ep: 1
+          dp-attn: false
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-1p1d-tp8-tp8-4-c1-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 8
+          ep: 1
+          dp-attn: false
+      # 1p4d-dep8-tp8. 10 nodes.
+      - conc-list: [64]
+        prefill:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-1p4d-dep8-tp8-10-c64-kvcache.yaml"
+        decode:
+          num-worker: 4
+          tp: 8
+          ep: 1
+          dp-attn: false
+      # WideEP TP=16 decode: 1p2d-dep8-dep16. 10 nodes.
+      - conc-list: [256]
+        prefill:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-1p2d-dep8-dep16-10-c256-kvcache.yaml"
+        decode:
+          num-worker: 2
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # WideEP TP=16 decode: 1p1d-dep8-dep16. 6 nodes.
+      - conc-list: [512]
+        prefill:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-1p1d-dep8-dep16-6-c512-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # WideEP TP=16 decode: 2p1d-dep8-dep16. 8 nodes.
+      - conc-list: [1536]
+        prefill:
+          num-worker: 2
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-2p1d-dep8-dep16-8-c1536-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # WideEP TP=16 decode: 4p1d-dep8-dep16. 12 nodes.
+      - conc-list: [4096]
+        prefill:
+          num-worker: 4
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-4p1d-dep8-dep16-12-c4096-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # WideEP TP=16 decode: 5p1d-dep8-dep16. 14 nodes.
+      - conc-list: [8192]
+        prefill:
+          num-worker: 5
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-5p1d-dep8-dep16-14-c8192-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # WideEP TP=12 decode: 6p1d-dep8-dep12. 15 nodes.
+      - conc-list: [8192]
+        prefill:
+          num-worker: 6
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-6p1d-dep8-dep12-15-c8192-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 12
+          ep: 12
+          dp-attn: true
+
+
+qwen3.5-fp8-gb200-dynamo-sglang-kvcache:
+  image: lmsysorg/sglang:nightly-dev-cu13-20260608-303757cc
+  model: Qwen/Qwen3.5-397B-A17B-FP8
+  model-prefix: qwen3.5
+  runner: gb200
+  precision: fp8
+  framework: dynamo-sglang
+  multinode: true
+  disagg: true
+  scenarios:
+    fixed-seq-len:
+    - isl: 1024
+      osl: 1024
+      search-space:
+      # 1P1D STP: TP4 prefill + TP4 decode (pure tensor parallel). 2 nodes (1+1).
+      - spec-decoding: "none"
+        conc-list: [1, 2, 4, 8, 16, 32, 64]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: false
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/qwen3.5/gb200-fp8/1k1k/1p1d-tp4-tp4-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: false
+      # 1P1D wide-EP: prefill DEP4 + decode DEP16. 5 nodes (1+4).
+      - spec-decoding: "none"
+        conc-list: [512, 1024, 2048]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/qwen3.5/gb200-fp8/1k1k/1p1d-dep4-dep16-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # 2P1D wide-EP: 2 prefill DEP4 + decode DEP16. 6 nodes (2+4).
+      - spec-decoding: "none"
+        conc-list: [4096]
+        prefill:
+          num-worker: 2
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/qwen3.5/gb200-fp8/1k1k/2p1d-dep4-dep16-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+    - isl: 8192
+      osl: 1024
+      search-space:
+      # 1P1D STP: TP4 prefill + TP4 decode (pure tensor parallel). 2 nodes (1+1).
+      - spec-decoding: "none"
+        conc-list: [1, 2, 4, 8, 16, 32, 64, 128]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: false
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/qwen3.5/gb200-fp8/8k1k/1p1d-tp4-tp4-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: false
+      # 4P1D wide-EP: 4 prefill DEP4 + decode DEP16. 8 nodes (4+4).
+      - spec-decoding: "none"
+        conc-list: [1024]
+        prefill:
+          num-worker: 4
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/qwen3.5/gb200-fp8/8k1k/4p1d-dep4-dep16-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # 8P1D wide-EP: 8 prefill DEP4 + decode DEP16. 12 nodes (8+4).
+      - spec-decoding: "none"
+        conc-list: [2048, 4096]
+        prefill:
+          num-worker: 8
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/qwen3.5/gb200-fp8/8k1k/8p1d-dep4-dep16-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+
+
+# MTP variant of dsv4-fp4-gb200-dynamo-sglang.
+
+dsv4-fp4-gb200-dynamo-sglang-mtp-kvcache:
+  image: lmsysorg/sglang:nightly-dev-cu13-20260528-0abe6a85
+  model: deepseek-ai/DeepSeek-V4-Pro
+  model-prefix: dsv4
+  runner: gb200
+  precision: fp4
+  framework: dynamo-sglang
+  multinode: true
+  disagg: true
+  scenarios:
+    fixed-seq-len:
+    - isl: 8192
+      osl: 1024
+      search-space:
+      # Low-latency baseline: 1p1d-tp8-tp8. 4 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [1]
+        prefill:
+          num-worker: 1
+          tp: 8
+          ep: 1
+          dp-attn: false
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-low-latency-1p1d-tp8-tp8-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 8
+          ep: 1
+          dp-attn: false
+      # Low-latency 1p6d-dep8-tp8: 1P (DEP=8) + 6 TP=8 decode workers. 14 nodes.
+      # Recipe runs concurrencies=32x64x128; matrix tracks the max.
+      - spec-decoding: "mtp"
+        conc-list: [128]
+        prefill:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-low-latency-1p6d-dep8-tp8-mtp-kvcache.yaml"
+        decode:
+          num-worker: 6
+          tp: 8
+          ep: 1
+          dp-attn: false
+      # Mid curve 1p1d-dep8-dep16. 6 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [1024]
+        prefill:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-mid-curve-1p1d-dep8-dep16-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # Mid curve 2p1d-dep8-dep16. 8 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [2048]
+        prefill:
+          num-worker: 2
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-mid-curve-2p1d-dep8-dep16-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # Mid curve 3p1d-dep8-dep16. 10 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [3072]
+        prefill:
+          num-worker: 3
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-mid-curve-3p1d-dep8-dep16-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # Mid curve 4p1d-dep8-dep16. 12 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [6144]
+        prefill:
+          num-worker: 4
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-mid-curve-4p1d-dep8-dep16-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # Mid curve 5p1d-dep8-dep16. 14 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [8192]
+        prefill:
+          num-worker: 5
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-mid-curve-5p1d-dep8-dep16-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # Mid curve 6p1d-dep8-dep16. 16 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [16384]
+        prefill:
+          num-worker: 6
+          tp: 8
+          ep: 8
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb200-mid-curve-6p1d-dep8-dep16-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+
+dsv4-fp4-gb300-dynamo-sglang-kvcache:
+  image: lmsysorg/sglang:nightly-dev-cu13-20260520-425dffbd
   model: deepseek-ai/DeepSeek-V4-Pro
   model-prefix: dsv4
   runner: gb300
@@ -13285,6 +13767,21 @@ dsv4-fp4-gb300-dynamo-sglang-mooncake-store:
     - isl: 8192
       osl: 1024
       search-space:
+      # WideEP TP=16 decode: 1p1d-dep4-dep16. 5 nodes (4P + 16D = 20 GPUs).
+      - conc-list: [1024]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb300-1p1d-dep4-dep16-5-c1024-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # Low concurrency: 1p1d-tp4-tp4. 2 nodes.
       - conc-list: [1]
         prefill:
           num-worker: 1
@@ -13292,14 +13789,224 @@ dsv4-fp4-gb300-dynamo-sglang-mooncake-store:
           ep: 1
           dp-attn: false
           additional-settings:
-          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb300-1p1d-tp4-tp4-2-c1_mooncake_store.yaml"
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb300-1p1d-tp4-tp4-2-c1-kvcache.yaml"
         decode:
           num-worker: 1
           tp: 4
           ep: 1
           dp-attn: false
+      # --- Weiliang wide-EP sweep (srt-slurm PR#173), 18 nodes total ---
+      # EP=12: 15P+3D, conc=12000.
+      - conc-list: [12000]
+        prefill:
+          num-worker: 15
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb300-15p1d-dep4-dep12-18-c12000-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 12
+          ep: 12
+          dp-attn: true
+      # EP=16: 14P+4D, conc=8192.
+      - conc-list: [8192]
+        prefill:
+          num-worker: 14
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb300-14p1d-dep4-dep16-18-c8192-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # EP=24: 12P+6D, conc=3000.
+      - conc-list: [3000]
+        prefill:
+          num-worker: 12
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb300-12p1d-dep4-dep24-18-c3000-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 24
+          ep: 24
+          dp-attn: true
+      # EP=32: 10P+8D, conc=2500.
+      - conc-list: [2500]
+        prefill:
+          num-worker: 10
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb300-10p1d-dep4-dep32-18-c2500-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 32
+          ep: 32
+          dp-attn: true
+      # EP=40: 8P+10D, conc=2048.
+      - conc-list: [2048]
+        prefill:
+          num-worker: 8
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-gb300-8p1d-dep4-dep40-18-c2048-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 40
+          ep: 40
+          dp-attn: true
 
-qwen3.5-fp4-gb300-dynamo-sglang-mooncake-store:
+
+dsv4-fp4-gb300-dynamo-sglang-mtp-kvcache:
+  image: lmsysorg/sglang:nightly-dev-20260527-14f81a67
+  model: deepseek-ai/DeepSeek-V4-Pro
+  model-prefix: dsv4
+  runner: gb300
+  precision: fp4
+  framework: dynamo-sglang
+  multinode: true
+  disagg: true
+  scenarios:
+    fixed-seq-len:
+    - isl: 8192
+      osl: 1024
+      search-space:
+      # Low-latency baseline: 1p1d-tp4-tp4. 2 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [1]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: false
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-low-latency-1p1d-tp4-tp4-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: false
+      # Low-latency 1p6d-dep4-tp4: 1P (DEP=4) + 6 TP=4 decode workers. 7 nodes.
+      # Recipe runs concurrencies=8x32x64; matrix tracks the max.
+      - spec-decoding: "mtp"
+        conc-list: [64]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-low-latency-1p6d-dep4-tp4-mtp-kvcache.yaml"
+        decode:
+          num-worker: 6
+          tp: 4
+          ep: 1
+          dp-attn: false
+      # Mid curve 1p1d-dep4-dep8. 3 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [256]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-mid-curve-1p1d-dep4-dep8-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+      # Mid curve 1p1d-dep4-dep16. 5 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [256]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-mid-curve-1p1d-dep4-dep16-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # Mid curve 2p1d-dep4-dep8. 4 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [512]
+        prefill:
+          num-worker: 2
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-mid-curve-2p1d-dep4-dep8-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+      # Mid curve 4p1d-dep4-dep8. 6 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [1024]
+        prefill:
+          num-worker: 4
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-mid-curve-4p1d-dep4-dep8-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+      # High concurrency 6p1d-dep4-dep8. 8 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [4096]
+        prefill:
+          num-worker: 6
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-high-conc-6p1d-dep4-dep8-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+      # High concurrency 8p1d-dep4-dep8. 10 nodes.
+      - spec-decoding: "mtp"
+        conc-list: [8192]
+        prefill:
+          num-worker: 8
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/deepseek-v4/8k1k/disagg-high-conc-8p1d-dep4-dep8-mtp-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 8
+          ep: 8
+          dp-attn: true
+
+
+
+qwen3.5-fp4-gb300-dynamo-sglang-kvcache:
   image: lmsysorg/sglang:nightly-dev-cu13-20260624-b2c8f7a2
   model: nvidia/Qwen3.5-397B-A17B-NVFP4
   model-prefix: qwen3.5
@@ -13313,6 +14020,41 @@ qwen3.5-fp4-gb300-dynamo-sglang-mooncake-store:
     - isl: 8192
       osl: 1024
       search-space:
+      # 1P1D TP4: 1 prefill worker at TP4 and 1 decode worker at TP4
+      # Pure tensor parallel (STP), 8k1k baseline-low-latency sweep.
+      # Total: 8 GB300 GPUs.
+      - spec-decoding: "none"
+        conc-list: [1, 4, 8, 16, 32, 64, 256]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: false
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/qwen3.5/gb300-fp4/8k1k/disagg/stp/8k1k_stp_lowlat_0-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: false
+      # 5P1D wide-EP: 5 prefill workers @ DEP4 + 1 decode worker @ DEP16.
+      # NIXL transfer. Total: 36 GB300 GPUs (5*4 + 4*4).
+      - spec-decoding: "none"
+        conc-list: [2048]
+        prefill:
+          num-worker: 5
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/qwen3.5/gb300-fp4/8k1k/disagg/stp/8k1k_stp_maxtpt_0-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+      # 6P1D wide-EP: 6 prefill workers @ DEP4 + 1 decode worker @ DEP16.
+      # Mooncake transfer. Total: 40 GB300 GPUs (6*4 + 4*4).
       - spec-decoding: "none"
         conc-list: [5120]
         prefill:
@@ -13321,9 +14063,112 @@ qwen3.5-fp4-gb300-dynamo-sglang-mooncake-store:
           ep: 4
           dp-attn: true
           additional-settings:
-          - "CONFIG_FILE=recipes/sglang/qwen3.5/gb300-fp4/8k1k/disagg/stp/8k1k_stp_maxtpt_1_mooncake_store.yaml"
+          - "CONFIG_FILE=recipes/sglang/qwen3.5/gb300-fp4/8k1k/disagg/stp/8k1k_stp_maxtpt_1-kvcache.yaml"
         decode:
           num-worker: 1
           tp: 16
           ep: 16
           dp-attn: true
+      # 7P1D wide-EP: 7 prefill workers @ DEP4 + 1 decode worker @ DEP16.
+      # Mooncake transfer. Total: 44 GB300 GPUs (7*4 + 4*4).
+      - spec-decoding: "none"
+        conc-list: [5120]
+        prefill:
+          num-worker: 7
+          tp: 4
+          ep: 4
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/qwen3.5/gb300-fp4/8k1k/disagg/stp/8k1k_stp_maxtpt_2-kvcache.yaml"
+        decode:
+          num-worker: 1
+          tp: 16
+          ep: 16
+          dp-attn: true
+
+
+glm5-fp4-gb300-dynamo-sglang-kvcache:
+  image: lmsysorg/sglang:v0.5.11-cu130
+  model: nvidia/GLM-5-NVFP4
+  model-prefix: glm5
+  runner: gb300-nv
+  precision: fp4
+  framework: dynamo-sglang
+  multinode: true
+  disagg: true
+  scenarios:
+    fixed-seq-len:
+    - isl: 8192
+      osl: 1024
+      search-space:
+      # 1p3d. 4 nodes (1P + 3 D workers @ 1 node each).
+      - conc-list: [128]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/glm5/gb300-fp4/8k1k/disagg/stp/8k1k_stp_lowlat_0-kvcache.yaml"
+        decode:
+          num-worker: 3
+          tp: 4
+          ep: 1
+          dp-attn: false
+      # 1p5d. 6 nodes.
+      - conc-list: [64]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/glm5/gb300-fp4/8k1k/disagg/stp/8k1k_stp_lowlat_1-kvcache.yaml"
+        decode:
+          num-worker: 5
+          tp: 4
+          ep: 1
+          dp-attn: false
+      # 1p9d. 10 nodes.
+      - conc-list: [32]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/glm5/gb300-fp4/8k1k/disagg/stp/8k1k_stp_lowlat_2-kvcache.yaml"
+        decode:
+          num-worker: 9
+          tp: 4
+          ep: 1
+          dp-attn: false
+      # 1p15d. 16 nodes.
+      - conc-list: [16]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/glm5/gb300-fp4/8k1k/disagg/stp/8k1k_stp_lowlat_3-kvcache.yaml"
+        decode:
+          num-worker: 15
+          tp: 4
+          ep: 1
+          dp-attn: false
+      # 1p17d. 18 nodes.
+      - conc-list: [12]
+        prefill:
+          num-worker: 1
+          tp: 4
+          ep: 1
+          dp-attn: true
+          additional-settings:
+          - "CONFIG_FILE=recipes/sglang/glm5/gb300-fp4/8k1k/disagg/stp/8k1k_stp_lowlat_4-kvcache.yaml"
+        decode:
+          num-worker: 17
+          tp: 4
+          ep: 1
+          dp-attn: false
+    # ---------- 1k1k high-throughput (wide-EP TP=32 decode) ----------
