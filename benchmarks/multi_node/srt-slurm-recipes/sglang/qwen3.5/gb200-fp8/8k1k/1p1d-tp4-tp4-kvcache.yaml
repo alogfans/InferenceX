@@ -31,7 +31,7 @@ backend:
     env:
       MOONCAKE_PROTOCOL: "rdma" # remain this even in MNNVL-only
       MOONCAKE_DEVICE: ""
-      MOONCAKE_GLOBAL_SEGMENT_SIZE: "800gb"
+      MOONCAKE_GLOBAL_SEGMENT_SIZE: "100gb"
       MC_FORCE_MNNVL: "1"
 
   type: sglang
