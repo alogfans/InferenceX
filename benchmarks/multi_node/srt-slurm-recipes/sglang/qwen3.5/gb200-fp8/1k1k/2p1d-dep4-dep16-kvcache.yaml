@@ -100,7 +100,6 @@ backend:
       mamba-track-interval: 2048
       mamba-ssm-dtype: "bfloat16"
       disaggregation-mode: "prefill"
-      disable-radix-cache: true
       disaggregation-bootstrap-port: 31000
       mem-fraction-static: 0.8
       chunked-prefill-size: 65536
@@ -111,6 +110,15 @@ backend:
       page-size: 64
       attention-backend: "trtllm_mha"
       moe-runner-backend: "flashinfer_trtllm"
+
+      enable-hierarchical-cache: true
+      hicache-ratio: 2
+      hicache-mem-layout: page_first_direct
+      hicache-write-policy: write_through
+      hicache-storage-backend: mooncake
+      hicache-storage-prefetch-policy: timeout
+      hicache-storage-backend-extra-config: >-
+        {"prefetch_timeout_base": 4, "prefetch_timeout_per_ki_token": 0.04}
 
     decode:
       served-model-name: "Qwen/Qwen3.5-397B-A17B-FP8"
@@ -131,7 +139,6 @@ backend:
       mamba-ssm-dtype: "bfloat16"
 
       disaggregation-mode: "decode"
-      disable-radix-cache: true
       disaggregation-bootstrap-port: 31000
 
       chunked-prefill-size: 4096
@@ -152,6 +159,15 @@ backend:
 
       decode-log-interval: 1
       stream-interval: 50
+
+      enable-hierarchical-cache: true
+      hicache-ratio: 2
+      hicache-mem-layout: page_first_direct
+      hicache-write-policy: write_through
+      hicache-storage-backend: mooncake
+      hicache-storage-prefetch-policy: timeout
+      hicache-storage-backend-extra-config: >-
+        {"prefetch_timeout_base": 4, "prefetch_timeout_per_ki_token": 0.04}
 
 benchmark:
   type: "sa-bench"

@@ -115,7 +115,6 @@ backend:
       linear-attn-decode-backend: "flashinfer"
 
       disaggregation-mode: "prefill"
-      disable-radix-cache: true
 
       mem-fraction-static: 0.8
       context-length: 9236
@@ -130,6 +129,15 @@ backend:
       page-size: 64
       watchdog-timeout: 1000000
       log-level: "info"
+
+      enable-hierarchical-cache: true
+      hicache-ratio: 2
+      hicache-mem-layout: page_first_direct
+      hicache-write-policy: write_through
+      hicache-storage-backend: mooncake
+      hicache-storage-prefetch-policy: timeout
+      hicache-storage-backend-extra-config: >-
+        {"prefetch_timeout_base": 4, "prefetch_timeout_per_ki_token": 0.04}
 
     decode:
       served-model-name: "nvidia/Qwen3.5-397B-A17B-NVFP4"
@@ -157,7 +165,6 @@ backend:
       linear-attn-decode-backend: "flashinfer"
 
       disaggregation-mode: "decode"
-      disable-radix-cache: true
 
       mem-fraction-static: 0.8
       context-length: 9236
@@ -172,6 +179,15 @@ backend:
       page-size: 64
       watchdog-timeout: 1000000
       decode-log-interval: 50
+
+      enable-hierarchical-cache: true
+      hicache-ratio: 2
+      hicache-mem-layout: page_first_direct
+      hicache-write-policy: write_through
+      hicache-storage-backend: mooncake
+      hicache-storage-prefetch-policy: timeout
+      hicache-storage-backend-extra-config: >-
+        {"prefetch_timeout_base": 4, "prefetch_timeout_per_ki_token": 0.04}
 
 benchmark:
   type: "sa-bench"

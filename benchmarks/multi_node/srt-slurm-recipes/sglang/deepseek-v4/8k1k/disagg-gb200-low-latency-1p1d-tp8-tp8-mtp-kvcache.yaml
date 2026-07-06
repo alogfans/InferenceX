@@ -92,6 +92,15 @@ backend:
       cuda-graph-max-bs: 8
       chunked-prefill-size: 65536
 
+      enable-hierarchical-cache: true
+      hicache-ratio: 2
+      hicache-mem-layout: page_first_direct
+      hicache-write-policy: write_through
+      hicache-storage-backend: mooncake
+      hicache-storage-prefetch-policy: timeout
+      hicache-storage-backend-extra-config: >-
+        {"prefetch_timeout_base": 4, "prefetch_timeout_per_ki_token": 0.04}
+
     decode:
       served-model-name: "deepseek-ai/DeepSeek-V4-Pro"
       model-path: "/model/"
@@ -118,6 +127,15 @@ backend:
       cuda-graph-max-bs: 8
       swa-full-tokens-ratio: 0.1
       context-length: 16384
+
+      enable-hierarchical-cache: true
+      hicache-ratio: 2
+      hicache-mem-layout: page_first_direct
+      hicache-write-policy: write_through
+      hicache-storage-backend: mooncake
+      hicache-storage-prefetch-policy: timeout
+      hicache-storage-backend-extra-config: >-
+        {"prefetch_timeout_base": 4, "prefetch_timeout_per_ki_token": 0.04}
 
 benchmark:
   type: "sa-bench"

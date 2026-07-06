@@ -78,7 +78,6 @@ backend:
       disaggregation-mode: "prefill"
       served-model-name: "deepseek-ai/DeepSeek-R1"
       trust-remote-code: true
-      disable-radix-cache: true
       kv-cache-dtype: "fp8_e4m3"
       attention-backend: "trtllm_mla"
       quantization: "modelopt_fp4"
@@ -106,12 +105,20 @@ backend:
       speculative-eagle-topk: 1
       speculative-num-draft-tokens: 3
 
+      enable-hierarchical-cache: true
+      hicache-ratio: 2
+      hicache-mem-layout: page_first_direct
+      hicache-write-policy: write_through
+      hicache-storage-backend: mooncake
+      hicache-storage-prefetch-policy: timeout
+      hicache-storage-backend-extra-config: >-
+        {"prefetch_timeout_base": 4, "prefetch_timeout_per_ki_token": 0.04}
+
     decode:
       disaggregation-mode: "decode"
       served-model-name: "deepseek-ai/DeepSeek-R1"
       prefill-round-robin-balance: true
       trust-remote-code: true
-      disable-radix-cache: true
       kv-cache-dtype: "fp8_e4m3"
       attention-backend: "trtllm_mla"
       quantization: "modelopt_fp4"
@@ -136,6 +143,15 @@ backend:
       speculative-num-steps: 2
       speculative-eagle-topk: 1
       speculative-num-draft-tokens: 3
+
+      enable-hierarchical-cache: true
+      hicache-ratio: 2
+      hicache-mem-layout: page_first_direct
+      hicache-write-policy: write_through
+      hicache-storage-backend: mooncake
+      hicache-storage-prefetch-policy: timeout
+      hicache-storage-backend-extra-config: >-
+        {"prefetch_timeout_base": 4, "prefetch_timeout_per_ki_token": 0.04}
 
 health_check:
   max_attempts: 360

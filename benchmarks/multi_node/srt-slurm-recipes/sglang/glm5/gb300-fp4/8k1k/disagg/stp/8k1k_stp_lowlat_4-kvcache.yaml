@@ -121,9 +121,17 @@ backend:
       # Other flags
       # disable-shared-experts-fusion: true
       enable-flashinfer-allreduce-fusion: true
-      disable-radix-cache: true
       weight-loader-prefetch-checkpoints: true
       model-loader-extra-config: '{"enable_multithread_load": true}'
+
+      enable-hierarchical-cache: true
+      hicache-ratio: 2
+      hicache-mem-layout: page_first_direct
+      hicache-write-policy: write_through
+      hicache-storage-backend: mooncake
+      hicache-storage-prefetch-policy: timeout
+      hicache-storage-backend-extra-config: >-
+        {"prefetch_timeout_base": 4, "prefetch_timeout_per_ki_token": 0.04}
 
     decode:
       # Model configuration
@@ -153,7 +161,6 @@ backend:
 
       # Other flags
       # disable-shared-experts-fusion: true
-      disable-radix-cache: true
       weight-loader-prefetch-checkpoints: true
       model-loader-extra-config: '{"enable_multithread_load": true}'
       # Parallelism (override from upstream zip_override_*_lowlat)
@@ -166,6 +173,14 @@ backend:
       max-running-requests: 1
       cuda-graph-max-bs:    1
 
+      enable-hierarchical-cache: true
+      hicache-ratio: 2
+      hicache-mem-layout: page_first_direct
+      hicache-write-policy: write_through
+      hicache-storage-backend: mooncake
+      hicache-storage-prefetch-policy: timeout
+      hicache-storage-backend-extra-config: >-
+        {"prefetch_timeout_base": 4, "prefetch_timeout_per_ki_token": 0.04}
 
 
 health_check:
