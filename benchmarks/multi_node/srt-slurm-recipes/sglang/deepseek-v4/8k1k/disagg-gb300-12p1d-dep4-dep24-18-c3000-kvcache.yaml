@@ -163,14 +163,6 @@ backend:
       max-running-requests: 18432
       cuda-graph-max-bs: 1280
 
-      enable-hierarchical-cache: true
-      hicache-ratio: 2
-      hicache-mem-layout: page_first_direct
-      hicache-write-policy: write_through
-      hicache-storage-backend: mooncake
-      hicache-storage-prefetch-policy: timeout
-      hicache-storage-backend-extra-config: >-
-        {"prefetch_timeout_base": 4, "prefetch_timeout_per_ki_token": 0.04}
 
 benchmark:
   type: "sa-bench"
